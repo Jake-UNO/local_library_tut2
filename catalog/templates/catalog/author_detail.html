@@ -1,0 +1,28 @@
+{% extends "catalog/base.html" %}
+
+{% block content %}
+
+ <h1>Name: {{ author.first_name }} {{ author.last_name }}</h1>
+
+  <p><strong>Date of birth:</strong> {{ author.date_of_birth }}</p>
+  <p><strong>Date of death:</strong> {{ author.date_of_death }}</p>
+
+  {% if author.author_image %}
+    <img alt="Author image"
+         src="{{ author.author_image.url }}"
+         style="max-width: 200px; height: auto;" />
+  {% endif %}
+
+  <hr>
+  <h3>Books</h3>
+
+  {% if author.book_set.all %}
+    <ul>
+      {% for book in author.book_set.all %}
+        <li><a href="{{ book.get_absolute_url }}">{{ book.title }}</a></li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>This author has no books listed.</p>
+  {% endif %}
+{% endblock %}
