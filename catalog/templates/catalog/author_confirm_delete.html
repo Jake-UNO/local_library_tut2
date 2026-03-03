@@ -1,15 +1,23 @@
 {% extends "catalog/base.html" %}
 
 {% block content %}
-    {% if perms.catalog.delete_author %}
-        <h1>Delete Author {{ author.first_name }}</h1>
-        <form method="Post">
-            {% csrf_token %}
-            <input type="submit" class="btn btn-danger" value="Delete">
-            <a href="{% url 'index' pk=author.id %} ">Cancel</a>
-        </form>
+  {% if perms.catalog.delete_book %}
+    <h1>Delete Book: {{ book.title }}</h1>
+
+    {% if book.bookinstance_set.count > 0 %}
+      <p><strong>Cannot delete this book because copies exist in the database.</strong></p>
+      <p>Delete the related Book Instances first, then try again.</p>
+      <a href="{% url 'book_detail' book.id %}">Back to book</a>
     {% else %}
-        You do not have permission to access this feature
-        <a href="{% url 'index' %}">Home</a>
+      <p>Are you sure you want to delete this book?</p>
+      <form method="post">
+        {% csrf_token %}
+        <input type="submit" class="btn btn-danger" value="Delete">
+        <a href="{% url 'book_detail' book.id %}">Cancel</a>
+      </form>
     {% endif %}
+  {% else %}
+    <p>You do not have permission to access this feature.</p>
+    <a href="{% url 'index' %}">Home</a>
+  {% endif %}
 {% endblock %}

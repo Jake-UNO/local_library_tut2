@@ -10,9 +10,11 @@
       <li>
         <a href="{{ book.get_absolute_url }}">{{ book.title }}</a> ({{book.author}})
        {% if user.is_superuser %}
-      | <a href="{% url 'book_update' book.id %}">Edit</a>
-      | <a href="{% url 'book_delete' book.id %}">Delete</a>
-    {% endif %}
+  | <a href="{% url 'book_update' book.id %}">Edit</a>
+  {% if book.bookinstance_set.count == 0 %}
+    | <a href="{% url 'book_delete' book.id %}">Delete</a>
+  {% endif %}
+{% endif %}
       </li>
     {% endfor %}
   </ul>
