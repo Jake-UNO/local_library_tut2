@@ -37,7 +37,7 @@ def index(request):
         'num_authors': num_authors,
         'num_visits': num_visits,
     }
-    return render(request, 'index.html', context=context)
+    return render(request, 'catalog/index.html', context=context)
 
 
 class BookListView(LoginRequiredMixin, generic.ListView):
