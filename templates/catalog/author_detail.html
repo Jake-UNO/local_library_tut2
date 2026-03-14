@@ -7,11 +7,16 @@
   <p><strong>Date of birth:</strong> {{ author.date_of_birth }}</p>
   <p><strong>Date of death:</strong> {{ author.date_of_death }}</p>
 
-  {% if author.author_image %}
-    <img alt="Author image"
-         src="{{ author.author_image.url }}"
-         style="max-width: 200px; height: auto;" />
-  {% endif %}
+{% if author.author_image %}
+  <img alt="Author image"
+       src="{{ author.author_image.url }}"
+       style="max-width: 200px; height: auto;" />
+{% else %}
+  <img alt="Stock author image"
+       src="/media/images/StockAuthor.jpg"
+       style="max-width: 200px; height: auto;" />
+{% endif %}
+
 
   <hr>
   <h3>Books</h3>
@@ -25,4 +30,10 @@
   {% else %}
     <p>This author has no books listed.</p>
   {% endif %}
+
+  <p>
+    <a class="btn btn-primary" href="{% url 'author_get_books_api' author.id %}">
+      Get Books from Google
+    </a>
+  </p>
 {% endblock %}

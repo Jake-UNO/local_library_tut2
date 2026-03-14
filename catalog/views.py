@@ -9,6 +9,15 @@ from django.urls import reverse, reverse_lazy
 from .forms import LoanBookForm
 import datetime
 
+import requests
+from django.conf import settings
+from django.core.files.base import ContentFile
+
+from io import BytesIO
+from PIL import Image
+import os
+
+
 
 class SuperuserRequiredMixin(UserPassesTestMixin):
     def test_func(self):
@@ -82,6 +91,9 @@ class BookCreate(LoginRequiredMixin, SuperuserRequiredMixin, CreateView):
         post = form.save(commit=False)
         post.save()
 
+        # try to load a book image from the Google Books API
+        form, post = bookImageFromAPI(post, form)
+
         # for all genres selected - add the genre many-to-many record
         for genre in form.cleaned_data['genre']:
             theGenre = get_object_or_404(Genre, name=genre)
@@ -98,6 +110,10 @@ class BookUpdate(LoginRequiredMixin, SuperuserRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         post = form.save(commit=False)
+
+        # if the image not uploaded, get the image from an API
+        if form.cleaned_data['book_image'] == None:
+            bookImageFromAPI(post, form)
 
         # delete the previously stored genres for the book
         for genre in post.genre.all():
@@ -196,3 +212,132 @@ def loan_book_librarian(request, pk):
         )
 
     return render(request, 'catalog/loan_book_librarian.html', {'form': form})
+
+def validateImage(image):
+    # Open the image and convert to RGB for consistent pixel checking
+    img = Image.open(BytesIO(image)).convert('RGB')
+    pixels = list(img.getdata())
+    # Check if all pixels are black or white - bad image - use stock image
+    if (all(p == (0, 0, 0) for p in pixels) or
+            all(p == (255, 255, 255) for p in pixels)):
+        return False
+    return True
+
+def fetch_google_book(isbn):
+    """Fetch book information from Google Books API using ISBN."""
+    url = f"https://www.googleapis.com/books/v1/volumes?q=isbn:{isbn}&key={settings.GOOGLEBOOKS_API_KEY}"
+
+    response = requests.get(url)
+
+    if response.status_code != 200:
+        return None
+
+    data = response.json()
+
+    if "items" not in data:
+        return None
+
+    book_data = data["items"][0]["volumeInfo"]
+
+    title = book_data.get("title")
+    summary = book_data.get("description")
+    authors = book_data.get("authors", [])
+    image = book_data.get("imageLinks", {}).get("thumbnail")
+
+    return {
+        "title": title,
+        "summary": summary,
+        "authors": authors,
+        "image": image,
+    }
+
+def author_get_books_api(request, pk):
+    # Use the Google Books API to get a list of books for an author
+    my_api_key = settings.GOOGLEBOOKS_API_KEY  # get the API key from the settings file
+    author = get_object_or_404(Author, pk=pk)  # get author information from database
+
+    # using the API key, request the books for the author using the first and last name
+    authorRequest = requests.get(
+        'https://www.googleapis.com/books/v1/volumes?q=inauthor:%22'
+        + author.first_name + '+' + author.last_name + '%22&key='
+        + my_api_key
+    )
+    authorInfo_json = authorRequest.json()
+
+    if authorInfo_json['totalItems'] == 0:
+        messages.success(
+            request,
+            (author.first_name + ' ' + author.last_name + ' has no books in Google Books')
+        )
+    else:
+        for b in authorInfo_json['items']:
+            try:  # if any exceptions occur, the book will not be added
+                title = b['volumeInfo']['title']
+                if 'industryIdentifiers' in b['volumeInfo']:
+                    isbn = b['volumeInfo']['industryIdentifiers'][0]['identifier']
+                summary = b['volumeInfo']['description']
+                imageURL = b['volumeInfo']['imageLinks']['smallThumbnail']
+
+                book, created = Book.objects.get_or_create(
+                    title=title,
+                    author=author,
+                    isbn=isbn,
+                    summary=summary
+                )
+                file_name = f"{isbn}.jpg"
+                imageFound = False
+
+                # If the book was created and an image URL exists, attempt to download and save it
+                if created and imageURL:
+                    response = requests.get(imageURL)
+                    if response.status_code == 200:
+                        if validateImage(response.content):
+                            book.book_image.save(file_name, ContentFile(response.content), save=True)
+                            imageFound = True
+
+                if created and not imageFound:  # use stock image if image not loaded
+                    stock_path = os.path.join(settings.MEDIA_ROOT, 'images', 'StockBook.jpg')
+                    with open(stock_path, 'rb') as f:
+                        stock_content = f.read()
+                    book.book_image.save(file_name, ContentFile(stock_content), save=True)
+
+                # add Genres to database if they don't already exist
+                for g in b['volumeInfo']['categories']:
+                    Genre.objects.get_or_create(name=g)
+
+                # save the genres for this book
+                book = get_object_or_404(Book, isbn=isbn)
+                book.genre.add(*Genre.objects.filter(name__in=b['volumeInfo']['categories']))
+                book.save()
+            except:
+                pass
+
+    return redirect('author_detail', pk=author.pk)
+
+def bookImageFromAPI(book, form):
+    my_api_key = settings.GOOGLEBOOKS_API_KEY  # get the API key from the settings file
+    # using the API key, request the book data using the ISBN number
+    URL = ('https://www.googleapis.com/books/v1/volumes?q=isbn:' +
+           form.cleaned_data['isbn'] + '&key=' + my_api_key)
+
+    bookInfo_json = requests.get(URL).json()
+    file_name = f"{form.cleaned_data['isbn']}.jpg"
+    imageFound = False  # assume no image in API
+
+    # If the book was created and an image URL exists, download and save it
+    if bookInfo_json['totalItems'] != 0:
+        imageURL = bookInfo_json['items'][0]['volumeInfo']['imageLinks']['smallThumbnail']
+        if imageURL:
+            response = requests.get(imageURL)
+            if response.status_code == 200:
+                if validateImage(response.content):
+                    book.book_image.save(file_name, ContentFile(response.content), save=True)
+                    imageFound = True  # image found in API
+
+    if not imageFound:
+        stock_path = os.path.join(settings.MEDIA_ROOT, 'images', 'StockBook.jpg')
+        with open(stock_path, 'rb') as f:
+            stock_content = f.read()
+        book.book_image.save(file_name, ContentFile(stock_content), save=True)
+
+    return form, book

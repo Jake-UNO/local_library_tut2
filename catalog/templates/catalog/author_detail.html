@@ -25,4 +25,10 @@
   {% else %}
     <p>This author has no books listed.</p>
   {% endif %}
+
+  <p>
+    <a class="btn btn-primary" href="{% url 'author_get_books_api' author.id %}">
+      Get Books from Google
+    </a>
+  </p>
 {% endblock %}

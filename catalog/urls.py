@@ -22,6 +22,7 @@ urlpatterns = [
     path('bookinstance/<uuid:pk>/loan/', views.loan_book_librarian, name='loan_book_librarian'),
 
     path('available/', views.AvailBooksListView.as_view(), name='all_available'),
+    path('author/<int:pk>/get-books/', views.author_get_books_api, name='author_get_books_api'),
 
 
 ]
