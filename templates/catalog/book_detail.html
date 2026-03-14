@@ -2,9 +2,9 @@
 {% block content %}
   <h1>Title: {{ book.title }}</h1>
 {% if book.book_image %}
-  <p>
-    <img src="{{ book.book_image.url }}" style="max-width:300px; height:auto;">
-  </p>
+  <img src="{{ book.book_image.url }}" alt="{{ book.title }}" class="img-fluid">
+{% else %}
+  <img src="/media/images/StockBook.jpg" alt="No book cover available" class="img-fluid">
 {% endif %}
 
   <p><strong>Author:</strong> <a href="{% url 'author_detail' book.author.id %}">{{ book.author }}</a></p>

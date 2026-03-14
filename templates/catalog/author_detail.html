@@ -8,13 +8,9 @@
   <p><strong>Date of death:</strong> {{ author.date_of_death }}</p>
 
 {% if author.author_image %}
-  <img alt="Author image"
-       src="{{ author.author_image.url }}"
-       style="max-width: 200px; height: auto;" />
+  <img src="{{ author.author_image.url }}" alt="{{ author }}" class="img-fluid">
 {% else %}
-  <img alt="Stock author image"
-       src="/media/images/StockAuthor.jpg"
-       style="max-width: 200px; height: auto;" />
+  <img src="/media/images/StockAuthor.jpg" alt="No author image available" class="img-fluid">
 {% endif %}
 
 
