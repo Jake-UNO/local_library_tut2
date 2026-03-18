@@ -264,7 +264,7 @@ def author_get_books_api(request, pk):
     )
     authorInfo_json = authorRequest.json()
 
-    if authorInfo_json['totalItems'] == 0:
+    if authorInfo_json.get('totalItems', 0) == 0:
         messages.success(
             request,
             (author.first_name + ' ' + author.last_name + ' has no books in Google Books')
