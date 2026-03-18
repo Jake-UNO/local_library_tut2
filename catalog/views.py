@@ -341,3 +341,15 @@ def bookImageFromAPI(book, form):
         book.book_image.save(file_name, ContentFile(stock_content), save=True)
 
     return form, book
+
+class BookCopyCreate(LoginRequiredMixin, SuperuserRequiredMixin, CreateView):
+    model = BookInstance
+    fields = ['imprint']
+    template_name = 'catalog/bookinstance_form.html'
+
+    def form_valid(self, form):
+        form.instance.book = get_object_or_404(Book, pk=self.kwargs.get('pk'))
+        form.instance.status = 'a'
+        copy = form.save(commit=False)
+        copy.save()
+        return redirect('book_detail', pk=self.kwargs.get('pk'))

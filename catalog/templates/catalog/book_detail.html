@@ -4,12 +4,16 @@
   <h1>Title: {{ book.title }}</h1>
 
   {% if book.book_image %}
-    <img src="{{ book.book_image.url }}" alt="{{ book.title }}" class="img-fluid">
+    <p>
+      <img src="{{ book.book_image.url }}" alt="{{ book.title }}" style="max-width:300px; height:auto;">
+    </p>
   {% else %}
     <img src="/media/images/StockBook.jpg" alt="No book cover available" class="img-fluid">
   {% endif %}
 
-  <p><strong>Author:</strong> <a href="{% url 'author_detail' book.author.id %}">{{ book.author }}</a></p>
+  <p><strong>Author:</strong>
+    <a href="{% url 'author_detail' book.author.id %}">{{ book.author }}</a>
+  </p>
   <p><strong>Summary:</strong> {{ book.summary }}</p>
   <p><strong>ISBN:</strong> {{ book.isbn }}</p>
   <p><strong>Genre:</strong> {{ book.genre.all|join:", " }}</p>
@@ -33,22 +37,12 @@
     {% endif %}
   </div>
 
-  <hr>
-  <p><strong>TEST AREA START</strong></p>
-  <p>ONE | TWO | THREE | FOUR</p>
-  <p>
-    <a href="#">Fake Link 1</a>
-    <a href="#">Fake Link 2</a>
-    <a href="{% url 'book_list' %}">Back to List</a>
-  </p>
-  <p><strong>TEST AREA END</strong></p>
-
   <p class="mt-3">
-    <a href="{% url 'book_create_copy' pk=book.pk %}">Add Book Copy</a>
-    <a href="{% url 'book_update' book.id %}">Edit Book</a>
+    <a href="{% url 'book_create_copy' pk=book.pk %}" class="btn btn-primary">Add Book Copy</a>
+    <a href="{% url 'book_update' book.id %}" class="btn btn-warning">Edit Book</a>
     {% if book.bookinstance_set.count == 0 %}
-      <a href="{% url 'book_delete' book.id %}">Delete Book</a>
+      <a href="{% url 'book_delete' book.id %}" class="btn btn-danger">Delete Book</a>
     {% endif %}
-    <a href="{% url 'book_list' %}">Back</a>
+    <a href="{% url 'book_list' %}" class="btn btn-secondary">Back</a>
   </p>
 {% endblock %}
